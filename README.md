@@ -1,4 +1,7 @@
 # lazy_thread_local
+[![Docs](https://docs.rs/pegy/badge.svg)](https://docs.rs/pegy)
+[![Crates.io](https://img.shields.io/crates/v/lazy_thread_local)](https://crates.io/crates/lazy_thread_local)
+[![Crates.io](https://img.shields.io/crates/d/lazy_thread_local)](https://crates.io/crates/lazy_thread_local)
 Lazy Per-object thread-local storage
 
 This library provides the `ThreadLocal` type which allows a separate copy of
