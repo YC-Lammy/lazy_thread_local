@@ -2,6 +2,14 @@
 name = "lazy_thread_local"
 version = "0.1.0"
 edition = "2021"
+authors = [ "YC Lam" ]
+license = "MIT"
+repository = "https://github.com/YC-Lammy/lazy_thread_local"
+description = "Lazily initialised per-object thread-local storage"
+keywords = ["thread", "concurrent", "thread_local", "lazy"]
+categories = ["rust-patterns", "memory-management"]
+documentation = "https://docs.rs/lazy_thread_local"
+readme = "./README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
