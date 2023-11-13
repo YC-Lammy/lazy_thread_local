@@ -10,7 +10,7 @@
 //! This library provides the `ThreadLocal` type which allows a separate copy of
 //! an object to be used for each thread. This allows for per-object
 //! thread-local storage, unlike the crate `thread_local`, this crate provides
-//! lazy initialisation and does not depend on std. 
+//! lazy initialisation and does not depend on std.
 //!
 //! Per-thread objects are not destroyed when a thread exits. Instead, objects
 //! are only destroyed when the `ThreadLocal` containing them is dropped.
@@ -40,7 +40,7 @@
 //!
 //! assert_eq!(TLS.get(), 5);
 //! ```
-//! 
+//!
 
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, Ordering};
@@ -90,10 +90,10 @@ mod private {
     pub struct RAllocator;
 
     #[cfg(not(any(unix, windows)))]
-    impl super::Allocator for RAllocator{
+    impl super::Allocator for RAllocator {
         fn allocate(size: usize) -> *mut u8 {
             let new_size = size + core::mem::size_of::<usize>();
-            unsafe{
+            unsafe {
                 let ptr = std::alloc::alloc(std::alloc::Layout::array::<u8>(new_size).unwrap());
 
                 let ptr = ptr as *mut usize;
@@ -104,7 +104,7 @@ mod private {
         }
 
         fn deallocate(ptr: *mut u8) {
-            unsafe{
+            unsafe {
                 let ptr = (ptr as *mut usize).sub(1);
                 let len = ptr.read();
 

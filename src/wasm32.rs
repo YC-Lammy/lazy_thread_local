@@ -3,37 +3,37 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use crate::Allocator;
 use crate::ThreadLocal;
 
-struct KeyStore{
+struct KeyStore {
     thread_id: u64,
     key: usize,
     value: usize,
-    dtor: Option<unsafe extern fn(*mut u8)>,
+    dtor: Option<unsafe extern "C" fn(*mut u8)>,
 }
 
-impl PartialEq for KeyStore{
+impl PartialEq for KeyStore {
     fn eq(&self, other: &Self) -> bool {
         self.thread_id == other.thread_id && self.key == other.key
     }
 }
 
-impl Eq for KeyStore{}
+impl Eq for KeyStore {}
 
-impl PartialOrd for KeyStore{
+impl PartialOrd for KeyStore {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        if self.thread_id == other.thread_id{
-            return self.key.partial_cmp(&other.key)
+        if self.thread_id == other.thread_id {
+            return self.key.partial_cmp(&other.key);
         }
 
-        return self.thread_id.partial_cmp(&other.thread_id)
+        return self.thread_id.partial_cmp(&other.thread_id);
     }
 }
 
-impl Ord for KeyStore{
+impl Ord for KeyStore {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        if self.thread_id == other.thread_id{
-            return self.key.cmp(&other.key)
+        if self.thread_id == other.thread_id {
+            return self.key.cmp(&other.key);
         }
-        return self.thread_id.cmp(&other.thread_id)
+        return self.thread_id.cmp(&other.thread_id);
     }
 }
 
@@ -41,9 +41,9 @@ static mut KEYS: Vec<KeyStore> = Vec::new();
 static mut RECYCLE_KEYS: Vec<usize> = Vec::new();
 static KEY_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-impl<T, A:Allocator> ThreadLocal<T, A>{
-    unsafe fn create_key() -> usize{
-        unsafe extern fn dtor<T, A: Allocator>(ptr: *mut u8) {
+impl<T, A: Allocator> ThreadLocal<T, A> {
+    unsafe fn create_key() -> usize {
+        unsafe extern "C" fn dtor<T, A: Allocator>(ptr: *mut u8) {
             if ptr.is_null() {
                 return;
             }
@@ -52,36 +52,36 @@ impl<T, A:Allocator> ThreadLocal<T, A>{
             A::deallocate(ptr as _);
         }
 
-        let id:u64 = core::mem::transmute(std::thread::current().id());
+        let id: u64 = core::mem::transmute(std::thread::current().id());
         let key = KEY_COUNT.fetch_add(1, Ordering::SeqCst);
-        
-        let store = KeyStore{
+
+        let store = KeyStore {
             thread_id: id,
             key,
             value: 0,
-            dtor: Some(dtor::<T, A>)
+            dtor: Some(dtor::<T, A>),
         };
 
-        match KEYS.binary_search(&store){
+        match KEYS.binary_search(&store) {
             Err(idx) => {
                 KEYS.insert(idx, store);
             }
             // key already used
             Ok(_) => {
                 // try to get from recycled keys
-                if let Some(key) = RECYCLE_KEYS.pop(){
-                    return key
-                } else{
+                if let Some(key) = RECYCLE_KEYS.pop() {
+                    return key;
+                } else {
                     // key overflow
                     panic!("thread local keys exceeded usize::MAX")
                 }
             }
         }
-        return key
+        return key;
     }
 
-    unsafe fn get_key(key: usize) -> *mut T{
-        unsafe extern fn dtor<T, A: Allocator>(ptr: *mut u8) {
+    unsafe fn get_key(key: usize) -> *mut T {
+        unsafe extern "C" fn dtor<T, A: Allocator>(ptr: *mut u8) {
             if ptr.is_null() {
                 return;
             }
@@ -90,29 +90,29 @@ impl<T, A:Allocator> ThreadLocal<T, A>{
             A::deallocate(ptr as _);
         }
 
-        let thread_id:u64 = core::mem::transmute(std::thread::current().id());
-        let store = KeyStore{
+        let thread_id: u64 = core::mem::transmute(std::thread::current().id());
+        let store = KeyStore {
             thread_id,
             key,
             value: 0,
-            dtor: Some(dtor::<T, A>)
+            dtor: Some(dtor::<T, A>),
         };
 
-        match KEYS.binary_search(&store){
+        match KEYS.binary_search(&store) {
             Ok(idx) => {
                 let s = &KEYS[idx];
-                return s.value as *mut T
+                return s.value as *mut T;
             }
             Err(idx) => {
                 KEYS.insert(idx, store);
 
-                return 0 as *mut T
+                return 0 as *mut T;
             }
         }
     }
 
-    unsafe fn set_key(key: usize, value: *mut T){
-        unsafe extern fn dtor<T, A: Allocator>(ptr: *mut u8) {
+    unsafe fn set_key(key: usize, value: *mut T) {
+        unsafe extern "C" fn dtor<T, A: Allocator>(ptr: *mut u8) {
             if ptr.is_null() {
                 return;
             }
@@ -121,15 +121,15 @@ impl<T, A:Allocator> ThreadLocal<T, A>{
             A::deallocate(ptr as _);
         }
 
-        let thread_id:u64 = core::mem::transmute(std::thread::current().id());
-        let store = KeyStore{
+        let thread_id: u64 = core::mem::transmute(std::thread::current().id());
+        let store = KeyStore {
             thread_id,
             key,
             value: value as usize,
-            dtor: Some(dtor::<T, A>)
+            dtor: Some(dtor::<T, A>),
         };
 
-        match KEYS.binary_search(&store){
+        match KEYS.binary_search(&store) {
             Ok(idx) => {
                 let s = &mut KEYS[idx];
                 s.value = value as usize;
@@ -140,13 +140,13 @@ impl<T, A:Allocator> ThreadLocal<T, A>{
         }
     }
 
-    unsafe fn delete_key(key: usize){
-        for s in &mut KEYS{
-            if s.key == key{
+    unsafe fn delete_key(key: usize) {
+        for s in &mut KEYS {
+            if s.key == key {
                 let ptr = s.value as *mut u8;
                 s.value = 0;
 
-                if let Some(dtor) = s.dtor{
+                if let Some(dtor) = s.dtor {
                     dtor(ptr);
                     s.dtor = None;
                 }
