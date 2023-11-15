@@ -193,9 +193,15 @@ impl<T, A: Allocator> ThreadLocal<T, A> {
     }
 }
 
-impl<T: Copy, A: Allocator> ThreadLocal<T, A> {
+impl<T: Copy> ThreadLocal<T> {
     /// initialise the thread local with a copyable value.
     pub const fn const_new(value: T) -> Self {
+        Self::const_new_in(value)
+    }
+}
+
+impl<T: Copy, A: Allocator> ThreadLocal<T, A> {
+    pub const fn const_new_in(value: T) -> Self {
         // a placeholder function
         fn dummy_drop(_: *mut u8) {
             // does nothing
@@ -217,8 +223,14 @@ impl<T: Copy, A: Allocator> ThreadLocal<T, A> {
     }
 }
 
-impl<T, A: Allocator> ThreadLocal<T, A> {
+impl<T> ThreadLocal<T> {
     pub fn new<I: ThreadLocalInitialiser<T>>(init: I) -> Self {
+        Self::new_in(init)
+    }
+}
+
+impl<T, A: Allocator> ThreadLocal<T, A> {
+    pub fn new_in<I: ThreadLocalInitialiser<T>>(init: I) -> Self {
         // drop function wrapper
         fn initialiser_drop<I: ThreadLocalInitialiser<T>, T, A: Allocator>(ptr: *mut u8) {
             if ptr.is_null() {
